@@ -3,9 +3,10 @@
 namespace Serebro\Assets\Resource;
 
 use Serebro\Assets\Resource;
+use Serebro\Assets\ResourceInterface;
 use Serebro\Assets\RevisionInterface;
 
-class Css extends Resource
+class Css extends Resource implements ResourceInterface
 {
 
 	/**
