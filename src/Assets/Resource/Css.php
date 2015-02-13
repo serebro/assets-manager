@@ -4,28 +4,9 @@ namespace Serebro\Assets\Resource;
 
 use Serebro\Assets\Resource;
 use Serebro\Assets\ResourceInterface;
-use Serebro\Assets\RevisionInterface;
 
 class Css extends Resource implements ResourceInterface
 {
-
-	/**
-	 * @param string            $filename
-	 * @param bool              $isLocal
-	 * @param null              $attributes
-	 * @param RevisionInterface $assetsRevision
-	 */
-	public function __construct(
-		$filename,
-		$isLocal = true,
-		$attributes = null,
-		RevisionInterface $assetsRevision = null
-	) {
-		$this->filename = $filename;
-		$this->isLocal = $isLocal;
-		$this->attributes = $attributes;
-		$this->assetsRevision = $assetsRevision;
-	}
 
 	/**
 	 * @return string
@@ -36,7 +17,7 @@ class Css extends Resource implements ResourceInterface
 			$this->attributes['rel'] = 'stylesheet';
 		}
 
-		$this->attributes['href'] = $this->getUri();
+		$this->attributes['href'] = $this->getUrl();
 
 		return "<link {$this->getAttributesString()}/>";
 	}

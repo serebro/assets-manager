@@ -3,6 +3,8 @@
 namespace Serebro\Assets;
 
 use Closure;
+use Exception;
+use InvalidArgumentException;
 use Serebro\Assets\Resource;
 use Serebro\Assets\Resource\Css;
 use Serebro\Assets\Resource\Js;
@@ -16,6 +18,11 @@ class Manager
 {
 
 	const DEFAULT_COLLECTION_NAME = 'head';
+
+	protected static $resourceTypes = [
+		'js' => 'Serebro\Assets\Resource\Js',
+		'css' => 'Serebro\Assets\Resource\Css',
+	];
 
 	/** @var Manager */
 	protected static $instance;
@@ -39,6 +46,14 @@ class Manager
 	final public static function getInstance()
 	{
 		return isset(static::$instance) ? static::$instance : static::$instance = new static;
+	}
+
+	/**
+	 * @param $resourceTypes
+	 */
+	public static function setResourceTypes($resourceTypes)
+	{
+		self::$resourceTypes = $resourceTypes;
 	}
 
 	final private function __construct()
@@ -76,75 +91,115 @@ class Manager
 	}
 
 	/**
+	 * @param ResourceInterface $resource
+	 * @return $this
+	 */
+	public function add(ResourceInterface $resource)
+	{
+		$filename = $resource->getFilename();
+		if (in_array($filename, $this->resources)) {
+			// skip duplicates
+			return $this;
+		}
+
+		$this->resources[] = $filename;
+		$resource->setAssetsRevision($this->assetsRevision);
+		$this->collection->append($resource);
+		return $this;
+	}
+
+	/**
+	 * The alias for JS resource
 	 * @param string $filename
 	 * @param bool   $isLocal
-	 * @param null   $attributes
+	 * @param array  $attributes
 	 * @return $this
 	 */
 	public function addJs($filename, $isLocal = true, $attributes = null)
 	{
-		if (in_array($filename, $this->resources)) {
-			return $this;
-		}
-		$this->resources[] = $filename;
-		$this->collection->append(new Js($filename, $isLocal, $attributes, $this->assetsRevision));
+		$this->add(new Js($filename, $isLocal, $attributes));
 		return $this;
 	}
 
 	/**
+	 * The alias for CSS resource
 	 * @param string $filename
 	 * @param bool   $isLocal
-	 * @param null   $attributes
+	 * @param array  $attributes
 	 * @return $this
 	 */
 	public function addCss($filename, $isLocal = true, $attributes = null)
 	{
-		if (in_array($filename, $this->resources)) {
-			return $this;
-		}
-		$this->resources[] = $filename;
-		$this->collection->append(new Css($filename, $isLocal, $attributes, $this->assetsRevision));
+		$this->add(new Css($filename, $isLocal, $attributes));
 		return $this;
 	}
 
 	/**
-	 * @param string $collectionName
+	 * @param string         $collectionName
+	 * @param string|Closure $filter
 	 * @return string
+	 * @throws Exception
 	 */
-	public function outputJs($collectionName = self::DEFAULT_COLLECTION_NAME)
-	{
-		return $this->output($collectionName, function (ResourceInterface $resource) {
-			return $resource instanceof Js;
-		});
-	}
-
-	/**
-	 * @param string $collectionName
-	 * @return string
-	 */
-	public function outputCss($collectionName = self::DEFAULT_COLLECTION_NAME)
-	{
-		return $this->output($collectionName, function (ResourceInterface $resource) {
-			return $resource instanceof Css;
-		});
-	}
-
-	/**
-	 * @param string  $collectionName
-	 * @param Closure $filter
-	 * @return string
-	 */
-	protected function output($collectionName, Closure $filter)
+	public function output($collectionName, $filter)
 	{
 		if (empty($this->collections[$collectionName])) {
 			return false;
 		}
 
-		$resources = array_map(function (ResourceInterface $resource) {
-			return $resource->output();
-		}, array_filter((array)$this->collections[$collectionName], $filter));
+		if (!is_string($filter) && !is_callable($filter, true)) {
+			throw new InvalidArgumentException('The argument "filter" has unknown type.');
+		}
 
-		return join(PHP_EOL, $resources);
+		if (is_string($filter)) {
+			if (!empty(self::$resourceTypes[$filter]) && class_exists(self::$resourceTypes[$filter])) {
+				$filter = self::$resourceTypes[$filter];
+			}
+			$filter = function (ResourceInterface $resource) use ($filter) {
+				return $resource instanceof $filter;
+			};
+		}
+
+		$resources = array_filter((array)$this->collections[$collectionName], $filter);
+
+		$strings = array_map(function (ResourceInterface $resource) {
+			return $resource->output();
+		}, $resources);
+
+		return join(PHP_EOL, $strings);
+	}
+
+	/**
+	 * The alias for JS output
+	 * @param string $collectionName
+	 * @return string
+	 * @throws Exception
+	 */
+	public function outputJs($collectionName = self::DEFAULT_COLLECTION_NAME)
+	{
+		return $this->output($collectionName, 'js');
+	}
+
+	/**
+	 * The alias for CSS output
+	 * @param string $collectionName
+	 * @return string
+	 * @throws Exception
+	 */
+	public function outputCss($collectionName = self::DEFAULT_COLLECTION_NAME)
+	{
+		return $this->output($collectionName, 'css');
+	}
+
+	/**
+	 * Reset instance
+	 */
+	public static function reset()
+	{
+		self::$instance->assetsRevision = null;
+		self::$instance->collection = null;
+		self::$instance->collections = [];
+		self::$instance->resources = [];
+		self::$instance->collection(self::DEFAULT_COLLECTION_NAME);
 	}
 
 	final private function __wakeup()

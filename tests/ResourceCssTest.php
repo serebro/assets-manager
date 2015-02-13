@@ -8,7 +8,8 @@ class ResourceCssTest extends \PHPUnit_Framework_TestCase
 	{
 		$ar = new \Serebro\Assets\Revision('dev');
 
-		$css = new \Serebro\Assets\Resource\Css('file.css', true, null, $ar);
+		$css = new \Serebro\Assets\Resource\Css('file.css', true, null);
+		$css->setAssetsRevision($ar);
 		$expected = '|<link rel="stylesheet" href="/build/dev/css/file.css\?(\d+)"/>|';
 		$this->assertTrue((bool)preg_match($expected, $css->output()));
 
