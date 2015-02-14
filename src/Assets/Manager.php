@@ -30,7 +30,7 @@ class Manager
 	/** @var RevisionInterface */
 	protected $assetsRevision;
 
-	/** @var array Collection[] */
+	/** @var Collection[] */
 	private $collections = [];
 
 	/** @var Collection */
@@ -53,6 +53,10 @@ class Manager
 	 */
 	public static function setResourceTypes($resourceTypes)
 	{
+		if (!is_array($resourceTypes)) {
+			throw new InvalidArgumentException('Argument "resourceTypes" must be an array.');
+		}
+
 		self::$resourceTypes = $resourceTypes;
 	}
 
@@ -82,6 +86,10 @@ class Manager
 	 */
 	public function collection($collectionName)
 	{
+		if (!is_string($collectionName)) {
+			throw new InvalidArgumentException('Argument "collectionName" must be a string.');
+		}
+
 		if (empty($this->collections[$collectionName])) {
 			$this->collections[$collectionName] = new Collection();
 		}
@@ -137,17 +145,21 @@ class Manager
 	/**
 	 * @param string         $collectionName
 	 * @param string|Closure $filter
-	 * @return string
+	 * @return bool|string
 	 * @throws Exception
 	 */
 	public function output($collectionName, $filter)
 	{
+		if (!is_string($collectionName)) {
+			throw new InvalidArgumentException('Argument "collectionName" must be a string.');
+		}
+
 		if (empty($this->collections[$collectionName])) {
 			return false;
 		}
 
 		if (!is_string($filter) && !is_callable($filter, true)) {
-			throw new InvalidArgumentException('The argument "filter" has unknown type.');
+			throw new InvalidArgumentException('Argument "collectionName" must be a string or callable');
 		}
 
 		if (is_string($filter)) {

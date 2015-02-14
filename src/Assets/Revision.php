@@ -2,6 +2,8 @@
 
 namespace Serebro\Assets;
 
+use InvalidArgumentException;
+
 class Revision implements RevisionInterface
 {
 
@@ -38,9 +40,15 @@ class Revision implements RevisionInterface
 	 */
 	public function __construct($env)
 	{
+		if (!is_string($env)) {
+			throw new InvalidArgumentException('Argument "env" must be a string.');
+		}
+
 		$env = strtolower($env);
+
 		if (empty(self::$envs[$env])) {
-			throw new UndefinedEnvException('Environment "' . $env . '" does not define. Defined: ' . join(', ', array_keys(self::$envs)));
+			throw new UndefinedEnvException('Environment "' . $env . '" does not define. Defined: ' . join(', ',
+					array_keys(self::$envs)));
 		}
 
 		$this->env = $env;
@@ -51,6 +59,9 @@ class Revision implements RevisionInterface
 	 */
 	public static function setAvailableEnvironments($envs)
 	{
+		if (!is_array($envs)) {
+			throw new InvalidArgumentException('Argument "envs" must be an array.');
+		}
 		self::$envs = $envs;
 	}
 
@@ -73,6 +84,10 @@ class Revision implements RevisionInterface
 	 */
 	public function setRevisionMap($map)
 	{
+		if (!is_array($map)) {
+			throw new InvalidArgumentException('Argument "map" must be an array.');
+		}
+
 		$this->revisionMap = $map;
 		return $this;
 	}
